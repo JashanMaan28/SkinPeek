@@ -1,0 +1,20 @@
+# Builds the bot from this repo instead of pulling the pre-built image.
+# Works with plain `docker compose -f docker-compose.dokploy.yml up -d --build`
+# and with a Dokploy "Compose" service (set DISCORD_TOKEN in the Environment tab).
+services:
+  bot:
+    build: .
+    restart: unless-stopped
+    environment:
+      # required: your Discord bot token
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      # optional: any config.json option as SKINPEEK_<OPTION_NAME>, for example:
+      # - SKINPEEK_OWNER_ID=${SKINPEEK_OWNER_ID}
+      # - SKINPEEK_HDEV_TOKEN=${SKINPEEK_HDEV_TOKEN}
+    volumes:
+      - skinpeek_data:/usr/app/data
+      # optional: use a full config.json instead of (or as well as) environment variables
+      # - ./config.json:/usr/app/config.json
+
+volumes:
+  skinpeek_data:

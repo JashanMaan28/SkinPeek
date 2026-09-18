@@ -102,6 +102,34 @@ For advanced users who want to deploy the bot using [Docker](https://www.docker.
 - Use `docker-compose up -d` to start the bot, `docker-compose logs -f` to see the logs and `docker-compose down` to stop it.
 
 
+#### Configuring with environment variables
+
+When running in Docker you don't have to mount a `config.json` at all: every option can be set through environment variables instead, and they take priority over `config.json` if both are present.
+
+- `DISCORD_TOKEN` (or `SKINPEEK_TOKEN`) sets the bot token
+- Any other option is `SKINPEEK_` followed by the option name in `SCREAMING_SNAKE_CASE`, e.g. `SKINPEEK_OWNER_ID=123456789`, `SKINPEEK_HDEV_TOKEN=abc`, `SKINPEEK_FETCH_SKIN_PRICES=false` (see the [option list](https://github.com/giorgi-o/SkinPeek/wiki/SkinPeek-Admin-Guide#the-option-list))
+
+The bot keeps its data (logged-in accounts, skin cache, stats) in `/usr/app/data` inside the container, so always mount a volume there or you'll lose it on every redeploy.
+
+### Dokploy (or any VPS running Docker)
+
+If you host on a VPS with [Dokploy](https://dokploy.com/) (e.g. an Oracle Cloud VM), the easiest setup is an **Application** built straight from this repo, with no `config.json` and no domain needed:
+
+1. [Create a discord bot](https://discordjs.guide/preparations/setting-up-a-bot-application.html#creating-your-bot) and [add it to your server](https://discordjs.guide/preparations/adding-your-bot-to-servers.html#creating-and-using-your-invite-link) with the `bot` and `applications.commands` scope. Copy the bot token.
+2. In Dokploy, open (or create) a project and click **Create Service → Application**.
+3. **Provider** tab: choose **GitHub** (if you've connected your GitHub account) or **Git** and paste the repository URL, e.g. `https://github.com/JashanMaan28/SkinPeek.git`, branch `master`. Set **Build Type** to **Dockerfile** (Dockerfile path `Dockerfile`, context `.`) and save.
+4. **Environment** tab: add `DISCORD_TOKEN=your-token-here` (plus any `SKINPEEK_*` options you want, like `SKINPEEK_OWNER_ID`) and save.
+5. **Advanced → Volumes**: add a **Volume Mount** with mount path `/usr/app/data` (any volume name, e.g. `skinpeek-data`). This is what keeps user logins and alerts across redeploys.
+6. Skip the **Domains** tab entirely, the bot only makes outgoing connections. Click **Deploy** and watch the **Logs** tab: you should see `Logged in as YourBot#1234!` within a minute or so.
+7. Optional: turn on **Auto Deploy** in the provider settings so every push to the branch redeploys the bot.
+
+Prefer Compose? Create a **Compose** service instead, point it at this repo with compose path `./docker-compose.dokploy.yml`, set `DISCORD_TOKEN` in its Environment tab and deploy.
+
+Notes:
+- Oracle's free-tier Ampere (ARM) instances work fine: the image is built on the VM itself and the base image supports `arm64`.
+- If you'd rather keep a full `config.json`, add a **File Mount** in Dokploy with the file contents and mount path `/usr/app/config.json`. Environment variables still override it.
+- Slash commands can take up to an hour to appear globally. To get them instantly in one server, send `@YourBot !deploy guild` in a channel the bot can see.
+
 ## Acknowledgements
 
 - [Hamper](https://github.com/OwOHamper/) for the inspiration and [the code](https://github.com/OwOHamper/Valorant-item-shop-discord-bot/blob/main/item_shop_viewer.py) showing how to do it

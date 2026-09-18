@@ -1,19 +1,20 @@
-FROM node:18-alpine
+FROM node:22-alpine
 
 WORKDIR /usr/app
+ENV NODE_ENV=production
 
-COPY assets /usr/app/assets
-COPY discord /usr/app/discord
-COPY languages /usr/app/languages
-COPY misc /usr/app/misc
-COPY valorant /usr/app/valorant
+# install dependencies first so they're cached between code changes
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
 
-COPY package.json /usr/app
-COPY package-lock.json /usr/app
+COPY assets ./assets
+COPY discord ./discord
+COPY languages ./languages
+COPY misc ./misc
+COPY valorant ./valorant
+COPY sharding.js SkinPeek.js ./
 
-COPY sharding.js /usr/app/
-COPY SkinPeek.js /usr/app/
-
-RUN npm i
+# user data, skin cache and stats live here: mount a volume on it to persist them
+RUN mkdir -p data
 
 CMD ["node", "SkinPeek.js"]
